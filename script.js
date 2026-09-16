@@ -61,6 +61,14 @@
                 navToggle.classList.toggle('open', open);
                 navToggle.setAttribute('aria-expanded', String(open));
             });
+            // close mobile nav when a link is clicked
+            navLinks.querySelectorAll('a').forEach(function (link) {
+                link.addEventListener('click', function () {
+                    navLinks.classList.remove('open');
+                    navToggle.classList.remove('open');
+                    navToggle.setAttribute('aria-expanded', 'false');
+                });
+            });
         }
 
         // smooth scroll for anchors
