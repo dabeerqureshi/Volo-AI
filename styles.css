@@ -86,7 +86,10 @@ img { -webkit-user-select: none; }
         top: 60px;
         left: 0;
         right: 0;
-        bottom: 0;
+        /* The blurred navbar contains fixed descendants; use viewport height explicitly. */
+        bottom: auto;
+        height: calc(100vh - 60px);
+        height: calc(100dvh - 60px);
         display: flex;
         flex-direction: column;
         align-items: stretch;
@@ -108,6 +111,7 @@ img { -webkit-user-select: none; }
         transform: translateX(0);
     }
     .nav-links li {
+        flex-shrink: 0;
         list-style: none;
         margin: 0;
         padding: 0;
