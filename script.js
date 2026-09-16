@@ -160,24 +160,79 @@
             var toast = document.getElementById('sim-toast');
             var phoneSim = document.querySelector('.phone-sim');
             if (!statusText || !transcript) return;
+
+            // Voice synthesis helpers
+            var voiceEnabled = true;
+            var selectedVoice = null;
+            function initVoice() {
+                if (!('speechSynthesis' in window)) { voiceEnabled = false; return; }
+                var v = speechSynthesis.getVoices();
+                selectedVoice = v.find(function (x) { return x.lang.indexOf('en-GB') === 0 || x.lang.indexOf('en-IE') === 0; })
+                    || v.find(function (x) { return x.lang.indexOf('en') === 0; }) || null;
+            }
+            if ('speechSynthesis' in window) { initVoice(); if (speechSynthesis.onvoiceschanged) speechSynthesis.onvoiceschanged = initVoice; }
+
+            function speak(text, rate) {
+                if (!voiceEnabled) return;
+                window.speechSynthesis.cancel();
+                var u = new SpeechSynthesisUtterance(text);
+                u.rate = rate || 0.95; u.pitch = 1.0; u.volume = 0.9;
+                if (selectedVoice) u.voice = selectedVoice;
+                window.speechSynthesis.speak(u);
+            }
+
+            function playRingtone() {
+                if (!voiceEnabled) return;
+                try {
+                    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    for (var i = 0; i < 3; i++) {
+                        setTimeout(function () {
+                            var o = ctx.createOscillator(); var g = ctx.createGain();
+                            o.type = 'sine';
+                            o.frequency.setValueAtTime(440, ctx.currentTime);
+                            o.frequency.setValueAtTime(480, ctx.currentTime + 0.1);
+                            g.gain.setValueAtTime(0.3, ctx.currentTime);
+                            g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+                            o.connect(g); g.connect(ctx.destination);
+                            o.start(); o.stop(ctx.currentTime + 0.5);
+                        }, i * 1200);
+                    }
+                } catch (e) {}
+            }
+
+            function playPickupSound() {
+                if (!voiceEnabled) return;
+                try {
+                    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    var o = ctx.createOscillator(); var g = ctx.createGain();
+                    o.type = 'sine';
+                    o.frequency.setValueAtTime(660, ctx.currentTime);
+                    o.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
+                    g.gain.setValueAtTime(0.25, ctx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                    o.connect(g); g.connect(ctx.destination);
+                    o.start(); o.stop(ctx.currentTime + 0.3);
+                } catch (e) {}
+            }
+
             var steps = [
-                { t: 0, status: 'Ringing… waiting for your team (5s)', ticks: 0, wave: false },
-                { t: 1500, status: 'Ringing… 4 seconds left', ticks: 1, wave: false },
-                { t: 3000, status: 'Ringing… 2 seconds left', ticks: 2, wave: false },
-                { t: 4500, status: 'Ringing… 1 second left', ticks: 3, wave: false },
-                { t: 5000, status: 'No answer — Volo picks up', ticks: 4, wave: false },
-                { t: 5500, status: 'Volo is answering…', ticks: 5, wave: true },
+                { t: 0, status: 'Ringing… waiting for your team (5s)', ticks: 0, wave: false, sound: 'ring' },
+                { t: 1500, status: 'Ringing… 4 seconds left', ticks: 1, wave: false, sound: 'ring' },
+                { t: 3000, status: 'Ringing… 2 seconds left', ticks: 2, wave: false, sound: 'ring' },
+                { t: 4500, status: 'Ringing… 1 second left', ticks: 3, wave: false, sound: 'ring' },
+                { t: 5000, status: 'No answer — Volo picks up', ticks: 4, wave: false, sound: 'pickup' },
+                { t: 5500, status: 'Volo is answering…', ticks: 5, wave: true, speak: 'Good afternoon! Thank you for calling. How can I help you today?', speakRate: 0.9 },
             ];
             var dialogue = [
                 { at: 6000, bubble: 'system', text: '— Volo AI answered —' },
-                { at: 7000, bubble: 'ai', text: 'Good afternoon! Thank you for calling. How can I help you today?' },
+                { at: 7000, bubble: 'ai', text: 'Good afternoon! Thank you for calling. How can I help you today?', speak: true, speakRate: 0.9 },
                 { at: 9500, bubble: 'customer', text: 'Hi, I\'m calling about a quote please.' },
-                { at: 11500, bubble: 'ai', text: 'Of course! Let me grab a few details and pass it to the team.' },
-                { at: 14000, bubble: 'ai', text: 'Great — can I take your name and phone number?' },
+                { at: 11500, bubble: 'ai', text: 'Of course! Let me grab a few details and pass it to the team.', speak: true, speakRate: 0.95 },
+                { at: 14000, bubble: 'ai', text: 'Great — can I take your name and phone number?', speak: true, speakRate: 0.95 },
                 { at: 16500, bubble: 'customer', text: 'Sure, it\'s Sam on 07912 345 678.' },
                 { at: 18500, bubble: 'ai', text: 'Thanks Sam — I\'ve saved the enquiry and your team will call you back today.' },
                 { at: 21000, bubble: 'customer', text: 'No that is all, thank you!' },
-                { at: 22500, bubble: 'ai', text: 'You are welcome! Have a great day. Goodbye!' },
+                { at: 22500, bubble: 'ai', text: 'You are welcome! Have a great day. Goodbye!', speak: true, speakRate: 0.9 },
                 { at: 24500, bubble: 'system', text: '— Call ended · Transcript saved —' },
             ];
             steps.forEach(function (s) {
@@ -185,6 +240,9 @@
                     statusText.textContent = s.status;
                     if (ringTicks) { var dots = ringTicks.querySelectorAll('i'); for (var i = 0; i < dots.length; i++) { dots[i].classList.toggle('filled', i < s.ticks); } }
                     if (s.wave && waveEq) { waveEq.classList.add('talking'); }
+                    if (s.sound === 'ring') playRingtone();
+                    if (s.sound === 'pickup') playPickupSound();
+                    if (s.speak) speak(s.speak, s.speakRate || 0.95);
                 }, s.t);
             });
             dialogue.forEach(function (d) {
@@ -195,11 +253,14 @@
                     transcript.appendChild(div);
                     setTimeout(function () { div.classList.add('in'); }, 50);
                     transcript.scrollTop = transcript.scrollHeight;
+                    if (d.speak && d.text.indexOf('—') !== 0) speak(d.text, d.speakRate || 0.95);
                 }, d.at);
             });
             setTimeout(function () {
                 if (toast) toast.classList.add('show');
                 if (phoneSim) phoneSim.classList.add('loaded');
+                window.speechSynthesis.cancel();
+                if (waveEq) waveEq.classList.remove('talking');
             }, 26000);
         })();
 
