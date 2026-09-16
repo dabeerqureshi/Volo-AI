@@ -14,8 +14,18 @@
   }
 
   function update() {
-    var calls = parseInt(callsInput.value, 10) || 0;
-    var value = parseInt(valueInput.value, 10) || 0;
+    var calls = Number(callsInput.value);
+    var value = Number(valueInput.value);
+    var valid = callsInput.value !== '' && valueInput.value !== ''
+      && Number.isFinite(calls) && Number.isFinite(value)
+      && Number.isInteger(calls) && calls >= 0 && calls <= 100
+      && value >= 1 && value <= 10000;
+    callsInput.setAttribute('aria-invalid', String(callsInput.value === '' || !Number.isInteger(calls) || calls < 0 || calls > 100));
+    valueInput.setAttribute('aria-invalid', String(valueInput.value === '' || !Number.isFinite(value) || value < 1 || value > 10000));
+    if (!valid) {
+      perWeekEl.textContent = perMonthEl.textContent = breakevenEl.textContent = '—';
+      return;
+    }
     var weekly = calls * value;
     var monthly = weekly * 4.33;
     perWeekEl.textContent = fmt(weekly);
@@ -28,7 +38,7 @@
     }
   }
 
-  if (callsInput && valueInput) {
+  if (callsInput && valueInput && perWeekEl && perMonthEl && breakevenEl) {
     callsInput.addEventListener('input', update);
     valueInput.addEventListener('input', update);
     update();

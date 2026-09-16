@@ -10,9 +10,12 @@
     <link rel="canonical" href="https://voloai.uk/404.html">
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<noscript><style>.preloader{display:none!important}.nav-toggle{display:none!important}@media(max-width:1024px){.navbar{position:relative}.nav-container{height:auto;flex-wrap:wrap;padding:16px 20px}.nav-links{position:static;transform:none;visibility:visible;pointer-events:auto;height:auto;padding:12px 0;width:100%}.hero{padding-top:40px}}</style></noscript>
 </head>
 <body>
-    <nav class="navbar">
+<a class="skip-link" href="#main-content">Skip to main content</a>
+    <nav class="navbar" id="navbar" aria-label="Primary navigation">
         <div class="nav-container">
             <a href="index.html" class="logo" aria-label="Volo AI home">
                 <img src="assets/logo.svg" alt="Volo AI logo" class="logo-img">
@@ -24,13 +27,14 @@
                 <li><a href="index.html#faq">FAQ</a></li>
             </ul>
             <a class="cta-button nav-cta-desktop" href="https://wa.me/923144781120?text=Hi!%20I%27d%20like%20to%20start%20the%2014-day%20free%20trial." target="_blank" rel="noopener">Start 14-day free trial</a>
-            <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+            <button class="nav-toggle" id="nav-toggle" type="button" aria-controls="nav-links" aria-label="Toggle navigation" aria-expanded="false">
                 <span></span><span></span><span></span>
             </button>
         </div>
     </nav>
 
-    <section class="section error-page">
+    <main id="main-content" tabindex="-1">
+<section class="section error-page">
         <div class="container center">
             <div class="error-code">404</div>
             <h1 style="font-size:clamp(1.8rem,4vw,2.4rem);margin:18px 0;">Page not found</h1>
@@ -42,7 +46,8 @@
         </div>
     </section>
 
-    <footer class="footer">
+    </main>
+<footer class="footer">
         <div class="container">
             <div class="footer-bottom">
                 <p>&copy; <span id="year"></span> Volo AI. All rights reserved.</p>

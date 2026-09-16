@@ -39,7 +39,8 @@
 ├── terms-and-conditions.html # Legal — plans, billing, overages, recording
 ├── 404.html                  # Custom error page
 ├── styles.css                # "Aurora" theme — premium dark + voice gradient
-├── script.js                 # Animations, phone-call simulator, video lightbox + DEMO_VIDEOS config
+├── script.js                 # Navigation, FAQ, counters and reveal interactions
+├── voice-demo.js             # User-initiated speech demo with transcript fallback
 ├── roi-calculator.js         # Interactive missed-call ROI calculator
 ├── robots.txt                # SEO crawler rules
 ├── sitemap.xml               # index + comparison + legal pages
@@ -57,23 +58,42 @@ python3 -m http.server 8000
 # open http://localhost:8000
 ```
 
-## Adding your demo videos
+## Voice demo
 
-Open `script.js` and paste your video URLs into the `DEMO_VIDEOS` object at the top:
+The landing page uses `voice-demo.js` and the browser's Web Speech API. Visitors must press **Play demo**; audio never autoplays. Stop, Replay and the Voice audio checkbox control playback. The transcript continues if speech is unsupported, blocked, or fails. Leaving the page or hiding the tab stops the demo.
 
-```js
-var DEMO_VIDEOS = {
-    'live-call': 'https://www.youtube.com/watch?v=YOUR_ID',
-    'setup-5min': '',
-    'dashboard': '',
-};
+This is an illustrative conversation, **not a live AI call**. It does not request microphone access, record audio, submit enquiries, or connect to Vapi. Voices and pronunciation depend on the browser/OS; a UK English voice is preferred when available. For a consistent branded voice, provide a licensed recording or a properly configured backend integration. Never put private service keys in frontend JavaScript.
+
+The old unused video-lightbox and pricing-toggle scripts were removed; the current pages have neither component. Monthly and annual pricing remain visible as separate cards.
+
+## Validation
+
+From the project root:
+
+```bash
+python3 scripts/validate_site.py
+node --check script.js
+node --check voice-demo.js
+node --check roi-calculator.js
+python3 -m http.server 8000
 ```
 
-YouTube (including Shorts), Vimeo and Google Drive links are supported — videos play in a pop-up lightbox. Cards left as `''` show a "Demo coming soon" state and scroll to the CTA section when clicked.
+Open `http://localhost:8000/scripts/browser-tests.html` for dependency-free browser regression tests. It must finish with `DONE` and no `FAIL` lines. Tests load the real pages; only speech is mocked and demo timers accelerated. They cover sequencing, replay, cancellation, mute, unsupported/error/stalled speech, ROI boundaries, FAQ state, mobile navigation, main landmarks and six viewport sizes. Mock tests do not establish audible quality or physical Safari/iPhone compatibility. Run the suite with normal browser timing: Chrome's `--virtual-time-budget` can race iframe resize/media-query events and give false failures for desktop navigation restoration.
 
-## SEO checklist (done)
+## Deployment checklist — still requires release verification
 
-- Unique title, meta description, canonical, Open Graph + Twitter card per page
+- Deploy the HTML, CSS, JavaScript and assets together; exclude `scripts/` from the public build when practical.
+- Serve over HTTPS and configure the host's custom 404 response to return HTTP 404.
+- Use revalidation for unversioned HTML/CSS/JS; do not apply immutable caching without content-hashed filenames.
+- Configure host-level `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, a suitable `Permissions-Policy` and a tested Content Security Policy. Inline styles/scripts and Google Fonts currently need to be accounted for; do not copy a restrictive CSP without testing it.
+- Test the deployed site on physical iOS Safari and Android Chrome: audible demo playback, stop/replay, rotation, keyboard navigation, reduced motion and slow/offline connections.
+- Verify contact details, pricing, legal/privacy statements and service claims with the business owner. Frontend changes cannot certify GDPR compliance, service uptime or actual backend behavior.
+- Check production performance/accessibility with browser audits. No Lighthouse score, WCAG certification, monitoring service or live backend integration is claimed by this repository.
+
+## SEO and accessibility
+
+- Main landmarks, skip links, visible focus, reduced-motion support and no-JavaScript navigation fallback
+- Page titles, descriptions and canonicals; Open Graph/Twitter coverage varies by page
 - JSON-LD: `Organization`, `Product` (with pricing/offer data) and `WebSite` on the landing page
 - Semantic HTML5, FAQ accordion, internal links between index and comparison
 - `sitemap.xml` lists all pages; `robots.txt` allows all crawlers

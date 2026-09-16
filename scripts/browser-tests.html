@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Frontend regression checks</title></head>
+<body><iframe title="Site under test" id="site" style="width:390px;height:844px;border:0"></iframe><pre id="results">RUNNING</pre>
+<script>
+(async function () {
+    var frame = document.getElementById('site'), output = document.getElementById('results'), results = [];
+    function assert(ok, message) { if (!ok) throw new Error(message); }
+    function wait(ms) { return new Promise(function (resolve) { setTimeout(resolve, ms); }); }
+    async function until(fn) {
+        for (var i = 0; i < 500; i++) { if (fn()) return; await wait(10); }
+        throw new Error('Completion timeout');
+    }
+    // Mock only browser speech; run real page markup, CSS and application scripts.
+    function mock(mode) {
+        var timeout = window.setTimeout.bind(window), pending, listener, voices = [];
+        window.setTimeout = function (fn, delay) { return timeout(fn, delay / 100); };
+        window.testSpeech = { calls: [], errors: [], active: false, overlap: false };
+        window.addEventListener('error', function (e) { testSpeech.errors.push(e.message); });
+        window.addEventListener('unhandledrejection', function (e) { testSpeech.errors.push(String(e.reason)); });
+        var engine = {
+            getVoices: function () { return voices; },
+            addEventListener: function (name, fn) { listener = fn; },
+            cancel: function () { clearTimeout(pending); testSpeech.active = false; },
+            speak: function (u) {
+                if (testSpeech.active) testSpeech.overlap = true;
+                testSpeech.active = true;
+                testSpeech.calls.push(u);
+                if (mode === 'hang') return;
+                if (mode === 'throw') throw new Error('Unavailable');
+                pending = timeout(function () {
+                    testSpeech.active = false;
+                    var fn = mode === 'error' ? u.onerror : u.onend;
+                    if (fn) fn();
+                }, 10);
+            }
+        };
+        Object.defineProperty(window, 'speechSynthesis', { value: mode === 'unsupported' ? undefined : engine });
+        Object.defineProperty(window, 'SpeechSynthesisUtterance', { value: function (text) { this.text = text; } });
+        window.loadVoices = function () { voices = [{ lang: 'en-GB', name: 'Test UK' }]; if (listener) listener(); };
+    }
+    async function load(mode) {
+        var source = await (await fetch('../index.html')).text();
+        source = source.replace('<head>', '<head><base href="' + new URL('../', location.href).href + '"><script>(' + mock.toString() + ')(' + JSON.stringify(mode) + ');<\/script>');
+        await new Promise(function (resolve) { frame.onload = resolve; frame.srcdoc = source; });
+        var w = frame.contentWindow, d = frame.contentDocument;
+        await until(function () { return !d.getElementById('demo-play').disabled; });
+        return { w: w, d: d, play: d.getElementById('demo-play'), stop: d.getElementById('demo-stop'), audio: d.getElementById('demo-audio'), log: d.getElementById('transcript'), speech: w.testSpeech };
+    }
+    async function test(name, fn) {
+        try { await fn(); results.push('PASS ' + name); }
+        catch (e) { results.push('FAIL ' + name + ': ' + e.message); }
+        output.textContent = results.join('\n');
+    }
+    await test('No autoplay, late voices, sequential completion, replay', async function () {
+        var t = await load('success');
+        await wait(100);
+        assert(t.speech.calls.length === 0, 'Autoplay');
+        t.w.loadVoices(); t.play.click(); t.play.click();
+        assert(t.speech.calls.length === 1, 'One synchronous speech request per click');
+        assert(t.speech.calls[0].voice.lang === 'en-GB', 'Late voice selection');
+        await until(function () { return !t.play.disabled; });
+        assert(t.speech.calls.length === 4 && t.log.children.length === 7, 'All dialogue without duplicates');
+        assert(!t.speech.overlap && !t.speech.active, 'No overlapping speech');
+        t.play.click();
+        await until(function () { return !t.play.disabled; });
+        assert(t.speech.calls.length === 8 && t.log.children.length === 7, 'Replay resets');
+        assert(t.speech.errors.length === 0, t.speech.errors.join(', '));
+    });
+    await test('Stop clears timers; transcript-only replay; page exit', async function () {
+        var t = await load('hang');
+        t.play.click(); t.stop.click();
+        await wait(500);
+        assert(t.log.children.length === 1 && !t.speech.active && !t.play.disabled, 'Stop cleanup');
+        t.audio.checked = false; t.play.click();
+        await until(function () { return !t.play.disabled; });
+        assert(t.log.children.length === 7 && t.speech.calls.length === 1, 'Silent replay');
+        t.audio.checked = true; t.play.click();
+        t.w.dispatchEvent(new t.w.Event('pagehide'));
+        await wait(500);
+        assert(!t.play.disabled && !t.speech.active && t.log.children.length === 1, 'Exit cleanup');
+    });
+    for (var mode of ['error', 'throw', 'hang', 'unsupported']) {
+        await test(mode + ' fallback completes', async function () {
+            var t = await load(mode); t.play.click();
+            await until(function () { return !t.play.disabled; });
+            assert(t.log.children.length === 7 && !t.speech.active, 'Fallback stuck');
+            assert(t.speech.calls.length === (mode === 'unsupported' ? 0 : 1), 'Repeated failures');
+            assert(t.speech.errors.length === 0, t.speech.errors.join(', '));
+        });
+    }
+    await test('Mute mid-sentence continues transcript', async function () {
+        var t = await load('hang'); t.play.click();
+        t.audio.checked = false; t.audio.dispatchEvent(new t.w.Event('change'));
+        await until(function () { return !t.play.disabled; });
+        assert(t.log.children.length === 7 && !t.speech.active, 'Mute should not stall playback');
+    });
+    await test('ROI boundaries, decimal values and FAQ state', async function () {
+        var t = await load('unsupported');
+        var calls = t.d.getElementById('roi-calls'), value = t.d.getElementById('roi-value');
+        function update(c, v) { calls.value = c; value.value = v; calls.dispatchEvent(new t.w.Event('input')); }
+        update('5', '80');
+        assert(t.d.getElementById('roi-per-week').textContent === '£400', 'Default ROI');
+        update('2', '80.50');
+        assert(t.d.getElementById('roi-per-week').textContent === '£161', 'Decimals preserved');
+        for (var pair of [['-1', '80'], ['101', '80'], ['1.5', '80'], ['', '80'], ['5', '0'], ['5', '10001']]) {
+            update(pair[0], pair[1]);
+            assert(t.d.getElementById('roi-per-week').textContent === '—', 'Invalid estimate: ' + pair);
+        }
+        update('0', '80');
+        assert(t.d.getElementById('roi-per-week').textContent === '£0', 'Zero calls valid');
+        var buttons = t.d.querySelectorAll('.faq-question');
+        buttons[0].click(); buttons[1].click();
+        assert(buttons[0].getAttribute('aria-expanded') === 'false' && buttons[1].getAttribute('aria-expanded') === 'true', 'Accordion state');
+        buttons[1].click();
+        assert(t.w.getComputedStyle(buttons[1].nextElementSibling).visibility === 'hidden', 'Collapsed answer hidden');
+    });
+    for (var page of ['index.html', 'comparison.html', 'privacy-policy.html', 'terms-and-conditions.html', '404.html']) {
+        await test(page + ' responsive layout, navigation, landmarks', async function () {
+            frame.removeAttribute('srcdoc');
+            await new Promise(function (resolve) { frame.onload = resolve; frame.src = '../' + page; });
+            var d = frame.contentDocument, w = frame.contentWindow;
+            var style = d.createElement('style');
+            style.textContent = '*{transition:none!important;animation:none!important}'; d.head.appendChild(style);
+            var menu = d.getElementById('nav-links'), toggle = d.getElementById('nav-toggle');
+            assert(d.querySelectorAll('main').length === 1 && d.querySelector('.skip-link'), 'Main and skip link');
+            for (var size of [[320,568], [390,844], [844,320], [768,1024], [1024,768], [1280,800]]) {
+                frame.style.width = size[0] + 'px'; frame.style.height = size[1] + 'px';
+                await wait(30);
+                assert(w.innerWidth === size[0], 'Exact viewport');
+                assert(d.documentElement.scrollWidth <= size[0] + 1, 'Horizontal overflow at ' + size);
+                if (size[0] <= 1024) {
+                    assert(menu.inert && w.getComputedStyle(menu).visibility === 'hidden', 'Closed menu not focusable');
+                    toggle.click();
+                    var rect = menu.getBoundingClientRect();
+                    assert(Math.abs(rect.height - (size[1] - 60)) < 1, 'Panel height');
+                    assert(!menu.inert && toggle.getAttribute('aria-expanded') === 'true', 'Open state');
+                    for (var link of menu.querySelectorAll('a')) {
+                        menu.scrollTop = link.offsetTop;
+                        var box = link.getBoundingClientRect();
+                        assert(link.contains(d.elementFromPoint(box.left + 8, Math.max(box.top, rect.top) + 8)), 'Reachable link ' + link.textContent);
+                    }
+                    d.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape' }));
+                    assert(menu.inert && d.activeElement === toggle && !d.body.classList.contains('nav-open'), 'Escape resets focus and scroll');
+                } else {
+                    assert(!menu.inert && w.getComputedStyle(toggle).display === 'none', 'Desktop state: inert=' + menu.inert + ', toggle=' + w.getComputedStyle(toggle).display + ', media=' + w.matchMedia('(max-width: 1024px)').matches);
+                }
+            }
+            d.querySelector('.skip-link').click();
+            assert(d.activeElement.id === 'main-content', 'Skip link focus');
+        });
+    }
+    output.textContent = results.join('\n') + '\nDONE';
+})();
+</script></body></html>
