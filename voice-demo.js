@@ -19,13 +19,13 @@
     var finishSpeech = null;
     var failed = false;
     var dialogue = [
-        ['ai', 'Good afternoon! Thank you for calling. How can I help you today?'],
-        ['customer', "Hi, I'm calling about a quote please."],
-        ['ai', 'Of course! Can I take your name and phone number for the team?'],
-        ['customer', "Sure, it's Sam. My number is 07700 900123."],
-        ['ai', "Thanks Sam. I've noted your enquiry and the team will call you back."],
-        ['customer', 'That is all, thank you!'],
-        ['ai', 'You are welcome! Have a great day. Goodbye!']
+        ['ai', 'Good afternoon, thanks for calling. How can I help you today?'],
+        ['customer', 'Hi, how much is a cut and blow-dry for long hair?'],
+        ['ai', "It's £45 and takes about an hour. Would you like me to book you in?"],
+        ['customer', 'Yes please. Do you have anything on Saturday morning?'],
+        ['ai', 'I have 10am or half past eleven free. Can I take your name and mobile number?'],
+        ['customer', "It's Sam, and my number is 07700 900123."],
+        ['ai', "Booked for Saturday at 10am, Sam. I've added it to the salon diary and sent you a text confirmation. Goodbye!"]
     ];
     function later(fn, delay) {
         var token = generation;

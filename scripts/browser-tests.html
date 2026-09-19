@@ -94,6 +94,38 @@
         await until(function () { return !t.play.disabled; });
         assert(t.log.children.length === 7 && !t.speech.active, 'Mute should not stall playback');
     });
+    await test('Industry demo cards, lazy YouTube embed and lightbox', async function () {
+        var cfg = { salons: { videoId: 'M7lc1UVf-VE', duration: '1:24', uploadDate: '2026-09-20', title: 'AI receptionist for hair & beauty salons' } };
+        var source = await (await fetch('../index.html')).text();
+        var inject = '<base href="' + new URL('../', location.href).href + '">'
+            + '<script>(' + mock.toString() + ')("unsupported");<\/script>'
+            + '<script>window.VOLO_DEMOS = ' + JSON.stringify(cfg) + ';<\/script>';
+        source = source.replace('<head>', '<head>' + inject);
+        await new Promise(function (resolve) { frame.onload = resolve; frame.srcdoc = source; });
+        var d = frame.contentDocument, w = frame.contentWindow;
+        assert(d.querySelectorAll('.demo-card[data-demo]').length === 5, 'Five industry demo cards');
+        assert(d.querySelectorAll('#demos .demo-industry').length === 5, 'Five industry labels');
+        assert(d.querySelectorAll('#demos .faq-item').length === 5, 'Industry FAQ block');
+        var card = d.querySelector('.demo-card[data-demo="salons"]');
+        assert(card.classList.contains('has-video') && !card.classList.contains('no-video'), 'Configured card upgraded');
+        var img = card.querySelector('.demo-thumb img');
+        assert(!!img && img.getAttribute('src') === 'https://i.ytimg.com/vi/M7lc1UVf-VE/hqdefault.jpg', 'Thumbnail from the YouTube image host');
+        assert(card.querySelector('[data-badge]').textContent === 'Demo · 1:24', 'Duration badge');
+        assert(d.querySelector('.demo-card[data-demo="driving"]').classList.contains('no-video'), 'Unconfigured cards stay coming soon');
+        assert(!d.getElementById('lightbox').classList.contains('open'), 'Dialog starts closed');
+        assert(!d.querySelector('#lightbox-frame iframe'), 'No YouTube request before a click');
+        card.querySelector('[data-play]').click();
+        var player = d.querySelector('#lightbox-frame iframe');
+        assert(!!player && player.getAttribute('src').indexOf('https://www.youtube-nocookie.com/embed/M7lc1UVf-VE') === 0, 'Embed loads on click via youtube-nocookie');
+        assert(d.getElementById('lightbox').classList.contains('open') && d.body.classList.contains('no-scroll'), 'Dialog opens and locks scrolling');
+        d.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape' }));
+        assert(!d.getElementById('lightbox').classList.contains('open') && !d.querySelector('#lightbox-frame iframe'), 'Escape closes and unloads the video');
+        assert(d.activeElement === card.querySelector('[data-play]'), 'Focus returns to the play button');
+        var hasVideoSchema = false;
+        d.querySelectorAll('script[type="application/ld+json"]').forEach(function (s) { if (s.textContent.indexOf('VideoObject') > -1) hasVideoSchema = true; });
+        assert(hasVideoSchema, 'VideoObject schema added for the configured demo');
+        assert(d.documentElement.scrollWidth <= w.innerWidth + 1, 'No horizontal overflow with the demos section');
+    });
     await test('ROI boundaries, decimal values and FAQ state', async function () {
         var t = await load('unsupported');
         var calls = t.d.getElementById('roi-calls'), value = t.d.getElementById('roi-value');

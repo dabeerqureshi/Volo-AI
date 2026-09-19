@@ -52,8 +52,14 @@ for m in re.finditer(r'<script type="application/ld\+json">(.*?)</script>', src,
     try:
         data = json.loads(m.group(1))
         offers = data['@graph'][1]['offers']
+        types = [node.get('@type') for node in data['@graph']]
         print('JSON-LD OK | lowPrice=%s highPrice=%s offerCount=%s' % (
             offers['lowPrice'], offers['highPrice'], offers['offerCount']))
+        print('JSON-LD nodes:', ', '.join(types))
+        for required in ('ItemList', 'FAQPage'):
+            if required not in types:
+                fails += 1
+                print('JSON-LD MISSING node:', required)
     except Exception as e:
         fails += 1
         print('JSON-LD INVALID:', e)
@@ -89,6 +95,30 @@ print('new features:', all(x in index_text for x in
 print('new FAQs:', all(x in index_text for x in
       ['Is the call recorded?', 'Can I customise how Volo sounds?',
        'Which tools does Volo integrate with?']))
+
+print('\n== Industry demos section ==')
+industries = ['AI receptionist for hair & beauty salons',
+              'AI receptionist for driving schools',
+              'AI receptionist for pet groomers',
+              'AI receptionist for physiotherapy & sports massage',
+              'AI receptionist for aesthetics & beauty clinics']
+missing_industries = [i for i in industries if i not in index_text]
+problems = []
+if 'id="demos"' not in index_text:
+    problems.append('missing #demos section')
+if index_text.count('class="demo-card') < 5:
+    problems.append('fewer than 5 demo cards')
+if 'src="demos.js"' not in index_text:
+    problems.append('demos.js not linked')
+if 'id="lightbox"' not in index_text:
+    problems.append('missing lightbox dialog')
+if missing_industries:
+    problems.append('missing industries: %s' % missing_industries)
+if problems:
+    fails += 1
+    print('index.html PROBLEMS:', '; '.join(problems))
+else:
+    print('5 industry demo cards, demos.js and the lightbox are all present')
 
 print('\n== Summary ==')
 print('PASS' if fails == 0 else '%d PROBLEM(S) FOUND' % fails)
