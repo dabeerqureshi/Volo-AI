@@ -73,7 +73,7 @@ The old pricing-toggle script was removed; monthly and annual pricing remain vis
 
 The landing page has a `#demos` section with five cards, one for each target business: hair & beauty salons, driving schools, pet groomers, physiotherapy & sports massage, and aesthetics & beauty clinics. Markup lives in `index.html` (static, so the text is crawlable), styling in the `/* demos */` block of `styles.css`, behaviour in `demos.js`.
 
-Every card ships in a "demo coming soon" state that links to WhatsApp. To publish a video, paste its YouTube ID into the `demos` map in `demos.js` (or define `window.VOLO_DEMOS` before that script loads) — the card then shows the real thumbnail, a duration badge and a **Watch demo** button. Nothing is requested from YouTube until a visitor presses play, and the iframe is removed again when the dialog closes.
+The hair & beauty salon card is configured with its YouTube video and opens the privacy-friendly lightbox on click. The other cards remain in a "demo coming soon" state and link to WhatsApp. To publish another video, paste its YouTube ID into the `demos` map in `demos.js` (or define `window.VOLO_DEMOS` before that script loads) — the card then shows the real thumbnail, a duration badge and a **Watch demo** button. Nothing is requested from YouTube until a visitor presses play, and the iframe is removed again when the dialog closes.
 
 Add `uploadDate` (`YYYY-MM-DD`, the day the video was published) as well and `demos.js` writes a matching `VideoObject` into the page's structured data. For guaranteed video rich results you can also paste a static `VideoObject` block into the `@graph` in `index.html` once a video is live.
 

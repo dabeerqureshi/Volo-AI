@@ -11,7 +11,7 @@
     // override the defaults below without editing this file.
     var demos = window.VOLO_DEMOS || {
         salons: {
-            videoId: '', duration: '1:24', uploadDate: '',
+            videoId: 'samnvMtsGN4', duration: '0:10', uploadDate: '2026-09-24',
             title: 'AI receptionist for hair & beauty salons'
         },
         driving: {
