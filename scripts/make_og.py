@@ -81,17 +81,17 @@ d.text((bx + (bw - (tb[2] - tb[0])) / 2 - tb[0], by + (bh - (tb[3] - tb[1])) / 2
 x = 320
 d.text((x, 176), 'Never miss a call again.', font=f_big, fill=(245, 247, 255))
 d.text((x, 300), 'Volo AI  \u00b7  The AI Voice Receptionist for UK Businesses', font=f_sub, fill=(205, 210, 230))
-d.text((x, 382), 'Bookings \u00b7 Enquiries \u00b7 FAQs \u2014 handled 24/7, answered in 5 seconds', font=f_line, fill=(160, 168, 200))
+d.text((x, 382), 'Bookings \u00b7 Cancellations \u00b7 Rescheduling \u00b7 FAQs \u2014 handled 24/7', font=f_line, fill=(160, 168, 200))
 
-chip1 = [x, 470, x + 210, 470 + 52]
+chip1 = [x, 470, x + 252, 470 + 52]
 d.rounded_rectangle(chip1, radius=26, fill=(34, 211, 238))
-tb = d.textbbox((0, 0), '7-DAY FREE TRIAL', font=f_chip)
-d.text((x + 16, 470 + (52 - (tb[3] - tb[1])) / 2 - tb[1]), '7-DAY FREE TRIAL', font=f_chip, fill=(7, 7, 14))
+tb = d.textbbox((0, 0), 'UNLIMITED CALLS', font=f_chip)
+d.text((x + 16, 470 + (52 - (tb[3] - tb[1])) / 2 - tb[1]), 'UNLIMITED CALLS', font=f_chip, fill=(7, 7, 14))
 
-chip2 = [x + 226, 470, x + 226 + 190, 470 + 52]
+chip2 = [x + 268, 470, x + 268 + 190, 470 + 52]
 d.rounded_rectangle(chip2, radius=26, fill=(139, 92, 246))
 tb = d.textbbox((0, 0), '\u00a3150/MONTH', font=f_chip)
-d.text((x + 242, 470 + (52 - (tb[3] - tb[1])) / 2 - tb[1]), '\u00a3150/MONTH', font=f_chip, fill=(245, 247, 255))
+d.text((x + 284, 470 + (52 - (tb[3] - tb[1])) / 2 - tb[1]), '\u00a3150/MONTH', font=f_chip, fill=(245, 247, 255))
 
 img.save('/Users/dabeer/DentalFlow-AI/assets/images/og-image.png', 'PNG')
 print('og-image.png generated OK')

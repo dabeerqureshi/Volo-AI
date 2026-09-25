@@ -25,7 +25,7 @@
         ['customer', 'Yes please. Do you have anything on Saturday morning?'],
         ['ai', 'I have 10am or half past eleven free. Can I take your name and mobile number?'],
         ['customer', "It's Sam, and my number is 07700 900123."],
-        ['ai', "Booked for Saturday at 10am, Sam. I've added it to the salon diary and sent you a text confirmation. Goodbye!"]
+        ['ai', "Booked for Saturday at 10am, Sam. I've added it to the calendar and emailed you and the salon a confirmation. Goodbye!"]
     ];
     function later(fn, delay) {
         var token = generation;

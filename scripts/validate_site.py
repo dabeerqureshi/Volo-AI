@@ -66,7 +66,8 @@ for m in re.finditer(r'<script type="application/ld\+json">(.*?)</script>', src,
 
 print('\n== Stale content scan ==')
 stale_terms = ['£1,620', '£135/mo', '7-day', 'qureshidabeer', 'dental',
-               'dhqlimited', '$1']
+               'dhqlimited', '$1', 'calendly', 'airtable', 'hubspot', 'whatsapp',
+               '14-day', '£29', '£79', '£129']
 # £150 is intentionally used in comparison.html to show human-receptionist costs
 for f in files_html + ['README.md', 'script.js', 'roi-calculator.js',
                        'sitemap.xml', 'robots.txt']:
@@ -78,23 +79,31 @@ for f in files_html + ['README.md', 'script.js', 'roi-calculator.js',
 
 print('\n== Correct pricing present ==')
 index_text = open('index.html').read()
-prices = ['£29/month', '£79/month', '£129/month', '£290/year',
-          '£790/year', '£1,290/year', '14-Day Free Trial']
+prices = ['£150/month', '£1,500/year', 'Two months free']
 missing = [p for p in prices if p not in index_text]
 if missing:
     fails += 1
     print('index.html MISSING prices:', missing)
 else:
-    print('index.html trials/tiers/annual all present')
+    print('index.html package prices present')
 
 print('\n== Features / FAQ count ==')
 print('feature cards in index:', index_text.count('feature-card'))
-print('new features:', all(x in index_text for x in
-      ['knowledge base', 'Caller info capture', 'Smart routing', 'Analytics dashboard',
-       'Multilingual', 'Plug into your stack']))
-print('new FAQs:', all(x in index_text for x in
-      ['Is the call recorded?', 'Can I customise how Volo sounds?',
-       'Which tools does Volo integrate with?']))
+capabilities = ['Check availability', 'Book appointments', 'Cancel appointments',
+                'Reschedule appointments', 'Transfer call to the owner', 'Answer FAQs',
+                'Google Sheets CRM', 'Google Calendar booking',
+                'Email notifications to both', 'Full 24/7 support']
+print('capabilities:', all(x in index_text for x in capabilities))
+if not all(x in index_text for x in capabilities):
+    fails += 1
+    print('index.html MISSING capabilities')
+faqs = ['How much does Volo cost?', 'Can Volo transfer a call to me?',
+        'Who gets notified when an appointment is booked?',
+        'Is my data safe and GDPR-compliant?']
+print('new FAQs:', all(x in index_text for x in faqs))
+if not all(x in index_text for x in faqs):
+    fails += 1
+    print('index.html MISSING FAQs')
 
 print('\n== Industry demos section ==')
 industries = ['AI receptionist for hair & beauty salons',
@@ -119,6 +128,20 @@ if problems:
     print('index.html PROBLEMS:', '; '.join(problems))
 else:
     print('5 industry demo cards, demos.js and the lightbox are all present')
+
+print('\n== Contact details ==')
+contact_email = 'volo.ai.uk@gmail.com'
+if contact_email not in index_text:
+    fails += 1
+    print('index.html MISSING contact email:', contact_email)
+else:
+    print('index.html contact email present:', contact_email)
+for f in files_html + ['README.md']:
+    text = open(f).read().lower()
+    banned = [b for b in ('wa.me', 'hello@voloai.uk', 'whatsapp', '+92 314 4781120', 'calendly', 'airtable', 'hubspot') if b in text]
+    if banned:
+        fails += 1
+        print('%-28s -> BANNED contact/legacy: %s' % (f, banned))
 
 print('\n== Summary ==')
 print('PASS' if fails == 0 else '%d PROBLEM(S) FOUND' % fails)

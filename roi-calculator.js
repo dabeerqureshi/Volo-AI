@@ -31,7 +31,7 @@
     perWeekEl.textContent = fmt(weekly);
     perMonthEl.textContent = fmt(monthly);
     if (value > 0) {
-      var be = Math.ceil(29 / value);
+      var be = Math.ceil(150 / value);
       breakevenEl.textContent = be;
     } else {
       breakevenEl.textContent = '—';
